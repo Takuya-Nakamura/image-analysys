@@ -6,11 +6,10 @@ import sys
 import os
 
 
-
 #入力画像をグレースケール変換＞２値化、二値化後の画像を返す
 def getBinary(im):
-    im_gray = cv2.cvtColor(im , cv2.COLOR_BGR2GRAY) #(B) //グレースケールの取得
-    return cv2.threshold(im_gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] #OTSUアルゴリズムを適用
+    im_gray = cv2.cvtColor(im , cv2.COLOR_BGR2GRAY) 
+    return cv2.threshold(im_gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] 
 
 # 外接矩形の取得
 def getBoundingRectAngle(contour):
@@ -25,25 +24,14 @@ def getPartImageByRect(img, rect):
     #[y軸、x軸]
     return img[ rect[2]:rect[3], rect[0]:rect[1],]
 
-# 輪郭データを y軸毎の最大、最小形式に変更(pointは0:x, 1:y)
-# return [main_axis座標、target_axis座標左端、target_axis座標右端] 
-# def getCropData(contour):
-#     contour = list(map(lambda i: i[0], contour))
-#     y_list = set([ point[1] for point in contour ]) # unique
-#     arr = []
-#     for y in y_list:
-#         #輪郭配列から yが特定値のxの配列取得
-#         points = list(filter(lambda i: i[1] == y, contour))
-#         x_list = [ i[0] for i in points ]
-#         arr.append( [ y, min(x_list), max(x_list)] )
-#     return arr
-
 def getCropData(contour, main_axis=0):
     target_axis =  1  if main_axis == 0 else 0
 
     #axis = 0 = x 
     #axis = 1 = y 
     contour = list(map(lambda i: i[0], contour))
+    
+
     axis_point_list = set([ point[main_axis] for point in contour ]) # unique
     arr = []
 
@@ -54,6 +42,7 @@ def getCropData(contour, main_axis=0):
         arr.append( [ val, min(tmp_list), max(tmp_list)] )
     return arr
 
+##y軸に沿ってx座標の範囲を取得していく
 def doCropY(input_im,  points, rect) :
     height = rect[3]-rect[2]
     width = rect[1]-rect[0] 
@@ -78,38 +67,27 @@ def doCropY(input_im,  points, rect) :
             #x軸の最大最小の範囲だったら元画像から新画像にコピーする
             if( out_x_min < x  and x < out_x_max):
                 output_im[out_y : out_y + 1, out_x : out_x + 1, ] = input_im[in_y : in_y + 1, in_x : in_x + 1, ]
-
     return output_im
 
 
-def doCropX(im, points, rect) :
+## 一度抽出済みの画像に対して、
+## x軸に沿ってy座標の範囲を取得していく
+def doCropX(im, points, rect):
     height = rect[3]-rect[2]
     width = rect[1]-rect[0] 
     left = rect[0]    
     top = rect[2]
 
-    #pprint(points)
-
     for point in points :
-
         for y in range(0, height) :
             #input画像 座標
             y = y
             x = point[0] - left
             y_min = point[1] - top
-            y_max = point[2] - top
-
-            #pprint("###################")
-            # 
-            # pprint(x)
-            # pprint("y:" + str(y))
-            # pprint("y_min:" + str(y_min))
-            # pprint("y_max:" + str(y_max))
-            
+            y_max = point[2] - top            
             #y軸の最大最小の範囲だったら元画像から新画像にコピーする
             if(  y < y_min  or y_max < y):
                 im[y:y+1, x:x+1,] = [0,0,0,0] #透過
-
     return im
 
 ##########################
@@ -132,6 +110,7 @@ im_src = cv2.imread(src_file, -1) #アルファチャンネル込
 
 #binaryにして輪郭を取得
 im_bin = getBinary(im_src)
+
 #contours = cv2.findContours(im_bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0]
 contours = cv2.findContours(im_bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0] # パスをすべて取得
 
@@ -142,7 +121,7 @@ for i, cnt in  enumerate(contours):
     crop_data  = getCropData(cnt, 1) #x軸基準
     im_out = doCropY(im_src, crop_data, rect)
     
-    # #x座標毎にyの上から下の範囲外を透過させる
+    # # #x座標毎にyの上から下の範囲外を透過させる
     crop_data  = getCropData(cnt, 0) #x軸基準
     im_out = doCropX(im_out, crop_data, rect)
 
