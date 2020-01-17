@@ -85,10 +85,10 @@ for (i,cnt) in enumerate(contours_large):
 
 
 ##########################
-# 代表色の取得
+# 代表色の取得 (指定の矩形からB G Rそれぞれの中央地を)
 ##########################
 # http://peaceandhilightandpython.hatenablog.com/entry/2016/01/03/151320
-#outputs
+# outputs
 t_colors = []
 for (i,out) in enumerate(outputs):
     color = np.zeros(3)
